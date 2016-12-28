@@ -220,90 +220,108 @@ class NF_Abstracts_Model
         // If the ID is not set, then we cannot pull settings from the Database.
         if( ! $this->_id ) return $this->_settings;
 
-        $form_cache = get_option( 'nf_form_' . $this->_parent_id );
-        if( $form_cache ){
+        if( ! $this->_settings ) {
+            global $wpdb;
+            $results = $wpdb->get_results(
+                "
+                SELECT Meta.key, Meta.value
+                FROM $this->_table_name as Object
+                JOIN $this->_meta_table_name as Meta
+                ON Object.id = Meta.parent_id
+                WHERE Object.id = '$this->_id'
+                "
+            , ARRAY_A );
 
-            if( 'field'== $this->_type ) {
-
-                if (isset($form_cache[ 'fields' ])) {
-
-                    foreach ($form_cache[ 'fields' ] as $object) {
-                        if ($this->_id != $object[ 'id' ]) continue;
-
-                        $this->update_settings($object['settings']);
-                        break;
-                    }
-                }
+            foreach( $results as $result ) {
+                $key = $result[ 'key' ];
+                $this->_settings[ $key ] = $result[ 'value' ];
             }
         }
 
-        // Only query if settings haven't been already queried or cache is FALSE.
-        if( ! $this->_settings || ! $this->_cache ) {
-
-            // Build query syntax from the columns property.
-            $columns = '`' . implode( '`, `', $this->_columns ) . '`';
-
-            // Query column settings
-            $results = $this->_db->get_row(
-                "
-                SELECT $columns
-                FROM   `$this->_table_name`
-                WHERE `id` = $this->_id
-                "
-            );
-
-            /*
-             * If the query returns results then
-             *   assign settings using the column name as the setting key.
-             */
-            if( $results ) {
-                foreach ($this->_columns as $column) {
-                    $this->_settings[$column] = $results->$column;
-                }
-            }
-
-            // Query settings from the meta table.
-            $meta_results = $this->_db->get_results(
-                "
-                SELECT `key`, `value`
-                FROM   `$this->_meta_table_name`
-                WHERE  `parent_id` = $this->_id
-                "
-            );
-
-            // Assign settings to the settings property.
-            foreach ($meta_results as $meta) {
-                $this->_settings[ $meta->key ] = $meta->value;
-            }
-        }
-
-        // Un-serialize queried settings results.
-        foreach( $this->_settings as $key => $value ){
-            $this->_settings[ $key ] = maybe_unserialize( $value );
-        }
-
-        // Check for passed arguments to limit the returned settings.
-        $only = func_get_args();
-        if ( $only && is_array($only)
-            // And if the array is NOT multidimensional
-            && (count($only) == count($only, COUNT_RECURSIVE))) {
-
-            // If only one setting, return a single value
-            if( 1 == count( $only ) ){
-
-                if( isset( $this->_settings[ $only[0] ] ) ) {
-                    return $this->_settings[$only[0]];
-                } else {
-                    return NULL;
-                }
-            }
-
-            // Flip the array to match the settings property
-            $only_settings = array_flip( $only );
-
-            // Return only the requested settings
-            return array_intersect_key( $this->_settings, $only_settings );
-        }
+//        $form_cache = get_option( 'nf_form_' . $this->_parent_id );
+//        if( $form_cache ){
+//
+//            if( 'field'== $this->_type ) {
+//
+//                if (isset($form_cache[ 'fields' ])) {
+//
+//                    foreach ($form_cache[ 'fields' ] as $object) {
+//                        if ($this->_id != $object[ 'id' ]) continue;
+//
+//                        $this->update_settings($object['settings']);
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Only query if settings haven't been already queried or cache is FALSE.
+//        if( ! $this->_settings || ! $this->_cache ) {
+//
+//            // Build query syntax from the columns property.
+//            $columns = '`' . implode( '`, `', $this->_columns ) . '`';
+//
+//            // Query column settings
+//            $results = $this->_db->get_row(
+//                "
+//                SELECT $columns
+//                FROM   `$this->_table_name`
+//                WHERE `id` = $this->_id
+//                "
+//            );
+//
+//            /*
+//             * If the query returns results then
+//             *   assign settings using the column name as the setting key.
+//             */
+//            if( $results ) {
+//                foreach ($this->_columns as $column) {
+//                    $this->_settings[$column] = $results->$column;
+//                }
+//            }
+//
+//            // Query settings from the meta table.
+//            $meta_results = $this->_db->get_results(
+//                "
+//                SELECT `key`, `value`
+//                FROM   `$this->_meta_table_name`
+//                WHERE  `parent_id` = $this->_id
+//                "
+//            );
+//
+//            // Assign settings to the settings property.
+//            foreach ($meta_results as $meta) {
+//                $this->_settings[ $meta->key ] = $meta->value;
+//            }
+//        }
+//
+//        // Un-serialize queried settings results.
+//        foreach( $this->_settings as $key => $value ){
+//            $this->_settings[ $key ] = maybe_unserialize( $value );
+//        }
+//
+//        // Check for passed arguments to limit the returned settings.
+//        $only = func_get_args();
+//        if ( $only && is_array($only)
+//            // And if the array is NOT multidimensional
+//            && (count($only) == count($only, COUNT_RECURSIVE))) {
+//
+//            // If only one setting, return a single value
+//            if( 1 == count( $only ) ){
+//
+//                if( isset( $this->_settings[ $only[0] ] ) ) {
+//                    return $this->_settings[$only[0]];
+//                } else {
+//                    return NULL;
+//                }
+//            }
+//
+//            // Flip the array to match the settings property
+//            $only_settings = array_flip( $only );
+//
+//            // Return only the requested settings
+//            return array_intersect_key( $this->_settings, $only_settings );
+//        }
 
         // Return all settings
         return $this->_settings;
