@@ -115,7 +115,6 @@ class NF_Admin_CPT_Submission
 
     public function post_row_actions( $actions, $sub )
     {
-
         if ( $this->cpt_slug == get_post_type() ){
             unset( $actions[ 'view' ] );
             unset( $actions[ 'inline hide-if-no-js' ] );
