@@ -118,12 +118,9 @@ class NF_Admin_CPT_Submission
         if ( $this->cpt_slug == get_post_type() ){
             unset( $actions[ 'view' ] );
             unset( $actions[ 'inline hide-if-no-js' ] );
-        } else {
-            return $actions;
+            $export_url = add_query_arg( array( 'action' => 'export', 'post[]' => $sub->ID ) );
+            $actions[ 'export' ] = sprintf( '<a href="%s">%s</a>', $export_url, __( 'Export', 'ninja-forms' ) );
         }
-
-        $export_url = add_query_arg( array( 'action' => 'export', 'post[]' => $sub->ID ) );
-        $actions[ 'export' ] = sprintf( '<a href="%s">%s</a>', $export_url, __( 'Export', 'ninja-forms' ) );
 
         return $actions;
     }
